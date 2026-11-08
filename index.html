@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>耿博宇是大帅哥</title>
+
+<!-- favicon：内联 SVG，不依赖外部文件 -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%2315171B'/%3E%3Ctext x='32' y='44' font-family='%22Microsoft YaHei%22,%22PingFang SC%22,sans-serif' font-size='36' font-weight='700' fill='%23F1F2F4' text-anchor='middle'%3E耿%3C/text%3E%3C/svg%3E">
+
+<style>
+  :root {
+    --paper: #F1F2F4;
+    --ink: #15171B;
+    --muted: #6E7178;
+    --line: rgba(21, 23, 27, 0.16);
+    --ring: #2646C4;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 32px 20px 40px;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Source Han Sans SC", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-synthesis: weight;
+  }
+
+  .board {
+    width: 100%;
+    max-width: 760px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  /* ===== 中间那行文字 ===== */
+  .line {
+    margin: 0 0 clamp(28px, 6vw, 52px);
+    font-size: clamp(30px, 8.6vw, 86px);
+    line-height: 1.18;
+    font-weight: 900;
+    letter-spacing: 0.045em;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    color: var(--ink);
+    transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    transform: scale(1);
+  }
+
+  .line.is-changing { transform: scale(1.045); }
+
+  /* 输入区：一条实线，上面写字 */
+  .setter {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: stretch;
+    gap: 12px;
+    padding-top: 14px;
+    border-top: 2px solid var(--ink);
+    text-align: left;
+  }
+
+  .setter input {
+    min-width: 0;
+    width: 100%;
+    padding: 12px 2px;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--ink);
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid var(--line);
+    border-radius: 0;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .setter input::placeholder { color: var(--muted); }
+
+  .setter input:focus {
+    border-bottom-color: var(--ink);
+    box-shadow: 0 2px 0 0 var(--ink);
+  }
+
+  .setter button {
+    padding: 0 22px;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--paper);
+    background: var(--ink);
+    border: 0;
+    border-radius: 2px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background-color 0.18s, transform 0.12s;
+  }
+
+  .setter button:hover { background: #2E3238; }
+  .setter button:active { transform: translateY(1px); }
+
+  .setter button:focus-visible,
+  .setter input:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 3px;
+  }
+
+  /* 一句说明 */
+  .note {
+    margin: 16px 0 0;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--muted);
+  }
+
+  .note strong {
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  @media (max-width: 400px) {
+    .setter { grid-template-columns: 1fr; gap: 10px; }
+    .setter button { padding: 14px 22px; min-height: 48px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .line, .setter button { transition: none; }
+    .line.is-changing { transform: none; }
+  }
+</style>
+</head>
+<body>
+
+  <main class="board">
+    <!-- 页面中央的这行文字 -->
+    <h1 class="line" id="line">耿博宇是大帅哥</h1>
+
+    <!-- 输入栏：改掉上面的文字 -->
+    <form class="setter" id="setter" autocomplete="off">
+      <label for="text" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">新的文字</label>
+      <input
+        type="text"
+        id="text"
+        maxlength="48"
+        placeholder="在此写下新的文字"
+        enterkeyhint="done"
+      >
+      <button type="submit">换掉</button>
+    </form>
+
+    <p class="note">按 <strong>Enter</strong> 或点「换掉」，中间那行字立刻变成你写的内容，刷新页面也还记得。</p>
+  </main>
+
+<script>
+  (function () {
+    var STORE_KEY = "geng-boyu-line";
+    var DEFAULT_LINE = "耿博宇是大帅哥";
+
+    var line = document.getElementById("line");
+    var setter = document.getElementById("setter");
+    var text = document.getElementById("text");
+
+    // 上次写下的文字，没有就用默认那句
+    try {
+      var saved = window.localStorage.getItem(STORE_KEY);
+      if (saved) line.textContent = saved;
+    } catch (err) { /* localStorage 不可用时忽略 */ }
+
+    function apply(textValue) {
+      var next = textValue.trim() || DEFAULT_LINE;
+
+      line.textContent = next;
+      text.value = "";
+      text.focus();
+
+      line.classList.add("is-changing");
+      window.setTimeout(function () {
+        line.classList.remove("is-changing");
+      }, 300);
+
+      try { window.localStorage.setItem(STORE_KEY, next); } catch (err) {}
+    }
+
+    setter.addEventListener("submit", function (event) {
+      event.preventDefault();
+      apply(text.value);
+    });
+  }());
+</script>
+
+</body>
+</html>
